@@ -9,7 +9,7 @@ from telebot import types
 import yt_dlp
 
 # --- ASOSIY SOZLAMALAR ---
-BOT_TOKEN = "8748781038:AAGgnIJfAuzxOxbTHovn0N4vwI0Y6U8yutI"
+BOT_TOKEN = "8748781038:AAFJJ9NUywzBzbJBOuQj4KqsmRKqkyEBW3I"
 CHANNEL_ID = -1004493023630  # Musiqa saqlanadigan kanal ID-si
 ADMIN_ID = 8216291475
 

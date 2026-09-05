@@ -1,10 +1,9 @@
 import os
-import requests
 from flask import Flask
 from threading import Thread
 import telebot
 
-# --- 1. RENDER PORT SAKLASH (FLASK) ---
+# --- RENDER PORT SAKLASH ---
 app = Flask('')
 
 @app.route('/')
@@ -21,53 +20,63 @@ def keep_alive():
 
 keep_alive()
 
-# --- 2. BOT SOZLAMALARI ---
-# Tirnoq ichiga o'zingizning Telegram Bot Tokeningizni qo'ying:
-BOT_TOKEN = "8748781038:AAF87OHUwcPRszbSZ4Hl7CcDe_SXSddQUlc"
+# --- BOT SOZLAMALARI ---
+BOT_TOKEN = "8748781038:AAFcbKTnLbMxy3uFtUzGERAWMnkjqCE1V6U"
 bot = telebot.TeleBot(BOT_TOKEN)
+
+# 1. O'zingizning kanalingizdagi musiqalar bazasi (file_id larni shu yerga yozib qo'yasiz)
+CHANNEL_MUSIC_DATABASE = {
+    # "musiqa nomi": "KANALDAGI_AUDIO_FILE_ID_KODI"
+}
 
 @bot.message_handler(commands=['start'])
 def start_message(message):
-    bot.reply_to(message, "Salom! Qo'shiq nomini yoki ijrochini yozib yuboring 🎶")
+    bot.reply_to(message, "Salom! Qo'shiq nomini yuboring. Avval kanalimdan, topilmasa Telegram qidiruvidan topib beraman 🎵")
 
 @bot.message_handler(func=lambda message: True)
-def search_music(message):
-    query = message.text
-    msg = bot.reply_to(message, f"🔍 '{query}' bo'yicha izlanmoqda...")
+def handle_music_request(message):
+    query = message.text.lower().strip()
     
-    try:
-        # Invidious API orqali qidiruv (YouTube blokirovkasini aylanib o'tadi)
-        api_url = f"https://api.invidious.io/instances_list"
-        instances = requests.get(api_url, timeout=5).json()
-        
-        # Ochiq serverlardan birini tanlash
-        working_instance = "https://invidious.nerdvpn.de"
-        search_url = f"{working_instance}/api/v1/search?q={query}&type=video"
-        
-        response = requests.get(search_url, timeout=10).json()
-        
-        if not response or len(response) == 0:
-            bot.edit_message_text(f"❌ '{query}' bo'yicha hech qanday musiqa topilmadi.", chat_id=message.chat.id, message_id=msg.message_id)
-            return
-
-        first_result = response[0]
-        title = first_result.get('title', 'Musiqa')
-        video_id = first_result.get('videoId')
-        
-        # Invidious orqali biriktirilgan audio havola
-        audio_url = f"{working_instance}/latest_version?id={video_id}&italic=true"
-        
-        bot.delete_message(message.chat.id, msg.message_id)
+    # 1-Qadam: Avval o'zingizning kanalingiz bazasidan qidiramiz
+    if query in CHANNEL_MUSIC_DATABASE:
+        file_id = CHANNEL_MUSIC_DATABASE[query]
         bot.send_audio(
-            chat_id=message.chat.id,
-            audio=audio_url,
-            title=title,
-            performer="YouTube Music",
-            caption=f"🎵 **{title}**\n\n🤖 @{bot.get_me().username} orqali yuklab olindi."
+            chat_id=message.chat.id, 
+            audio=file_id, 
+            caption=f"🎵 Sizning kanalingizdan olindi"
         )
+        return
 
+    # 2-Qadam: Kanalda bo'lmasa, Telegram'dagi boshqa musiqa botlari orqali inline qidiramiz
+    try:
+        msg = bot.reply_to(message, f"🔍 '{message.text}' Telegram bazasidan qidirilmoqda...")
+        
+        # Ommaviy musiqa botlari (masalan @Vkmusicbot yoki @Melobot kabilar) orqali qidirish uchun inline so'rov
+        # Bu yerda bot Telegram'ning global qidiruvidan foydalanib musiqa qidiradi
+        results = bot.get_inline_bot_results("@Vkmusicbot", message.text)
+        
+        if results and results.results:
+            # Topilgan birinchi musiqani foydalanuvchiga yuborish
+            first_result = results.results[0]
+            bot.send_audio(
+                chat_id=message.chat.id,
+                audio=first_result.audio.audio_url if hasattr(first_result, 'audio') else first_result.id,
+                caption=f"🎵 Telegram musiqa bazasidan topildi"
+            )
+            bot.delete_message(message.chat.id, msg.message_id)
+        else:
+            bot.edit_message_text(
+                f"❌ Afsuski, '{message.text}' na kanalingizdan, na Telegram bazasidan topilmadi.", 
+                chat_id=message.chat.id, 
+                message_id=msg.message_id
+            )
+            
     except Exception as e:
-        bot.edit_message_text(f"❌ Musiqa yuklashda xatolik yuz berdi. Qaytadan urinib ko'ring.", chat_id=message.chat.id, message_id=msg.message_id)
+        bot.edit_message_text(
+            f"❌ Qidirish vaqtida xatolik yuz berdi. (Botda inline qidirish yoqilmagan bo'lishi mumkin)", 
+            chat_id=message.chat.id, 
+            message_id=msg.message_id
+        )
 
 if __name__ == '__main__':
     bot.infinity_polling()

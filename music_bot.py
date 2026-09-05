@@ -23,7 +23,7 @@ keep_alive()
 
 # --- 2. BOT SOZLAMALARI ---
 # Tirnoq ichiga o'zingizning Telegram Bot Tokeningizni qo'ying:
-BOT_TOKEN = "8748781038:AAFJJ9NUywzBzbJBOuQj4KqsmRKqkyEBW3I"
+BOT_TOKEN = "8748781038:AAF87OHUwcPRszbSZ4Hl7CcDe_SXSddQUlc"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])

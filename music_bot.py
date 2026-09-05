@@ -21,7 +21,7 @@ def keep_alive():
 keep_alive()
 
 # --- BOT SOZLAMALARI ---
-BOT_TOKEN = "8748781038:AAFcbKTnLbMxy3uFtUzGERAWMnkjqCE1V6U"
+BOT_TOKEN = "8748781038:AAF7JEXn5DcAI9YNgS2BCGkBOZoL3HwGcMA"
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Kanalingizdagi musiqalar bazasi (Nomi va file_id kodi)
